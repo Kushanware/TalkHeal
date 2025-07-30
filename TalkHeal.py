@@ -43,56 +43,120 @@ def show_signup_ui():
             st.session_state.show_signup = False
             st.rerun()
         else:
-            st.error(message)
-    st.markdown("Already have an account? [Login](#)", unsafe_allow_html=True)
-    if st.button("Go to Login"):
-        st.session_state.show_signup = False
-        st.rerun()
 
-if not st.session_state.authenticated:
-    if st.session_state.show_signup:
-        show_signup_ui()
-    else:
-        show_login_ui()
-else:
-    st.title(f"Welcome to TalkHeal, {st.session_state.user_name}! 💬")
-    st.markdown("Navigate to other pages from the sidebar.")
-
-    if st.button("Logout"):
-        for key in ["authenticated", "user_email", "user_name", "show_signup"]:
-            if key in st.session_state:
-                del st.session_state[key]
-        st.rerun()
-
-import google.generativeai as genai
-from core.utils import save_conversations, load_conversations
-from core.config import configure_gemini, PAGE_CONFIG
-from core.utils import get_current_time, create_new_conversation
-from css.styles import apply_custom_css
-from components.header import render_header
+import streamlit as st
+import streamlit_authenticator as stauth
+import time
+from core.utils import (
+    load_auth_config, 
+    load_css, 
+    apply_custom_css, 
+    load_google_fonts, 
+    get_ai_response, 
+    save_conversations,
+    load_conversations
+)
 from components.sidebar import render_sidebar
-from components.chat_interface import render_chat_interface, handle_chat_input
-from components.emergency_page import render_emergency_page
-from components.profile import apply_global_font_size
-from components.theme_toggle import render_theme_toggle
+from components.header import render_header
 
+# --- Page and Session Initialization ---
+st.set_page_config(
+    page_title="TalkHeal", 
+    page_icon="favicon/favicon.ico", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# --- 1. INITIALIZE SESSION STATE ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "conversations" not in st.session_state:
-    st.session_state.conversations = load_conversations()
-if "active_conversation" not in st.session_state:
-    st.session_state.active_conversation = -1
-if "show_emergency_page" not in st.session_state:
-    st.session_state.show_emergency_page = False
-if "sidebar_state" not in st.session_state:
-    st.session_state.sidebar_state = "expanded"
-# Initialize theme state early for better performance
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
-if "theme_changed" not in st.session_state:
-    st.session_state.theme_changed = False
+load_css()
+apply_custom_css()
+load_google_fonts()
+
+# --- Authentication ---
+if 'authenticator' not in st.session_state:
+    config = load_auth_config()
+    st.session_state.authenticator = stauth.Authenticate(
+        config['credentials'],
+        config['cookie']['name'],
+        config['cookie']['key'],
+        config['cookie']['expiry_days'],
+        config['preauthorized']
+    )
+
+authenticator = st.session_state.authenticator
+name, authentication_status, username = authenticator.login('main')
+
+# --- Session State for Chat ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# --- Main Application Logic ---
+if authentication_status:
+    # Load user's conversation history once per session after login
+    if "conversations_loaded" not in st.session_state and username:
+        st.session_state.messages = load_conversations(username)
+        st.session_state.conversations_loaded = True
+
+    # Main app layout
+    col1, col2 = st.columns([1, 4])
+
+    with col1:
+        render_sidebar(authenticator)
+
+    with col2:
+        render_header()
+
+        # Display existing chat messages from session state
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # Handle new chat input from the user
+        if prompt := st.chat_input("Share your thoughts..."):
+            # Add user message to session state and display it
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Generate and display AI response
+            with st.chat_message("assistant"):
+                with st.spinner("TalkHeal is thinking..."):
+                    # Define the system prompt for the AI
+                    system_prompt = (
+                        "You are TalkHeal, a compassionate and supportive AI mental health companion. "
+                        "Your goal is to provide a safe, non-judgmental space for users to share their thoughts and feelings. "
+                        "Respond with empathy, offer encouragement, and gently guide the conversation. "
+                        "Do not provide medical advice, diagnoses, or treatment plans. "
+                        "If a user seems to be in crisis, strongly encourage them to seek help from a professional."
+                    )
+                    
+                    # Create a formatted history for the AI prompt
+                    chat_history_for_prompt = "\n".join(
+                        [f'{m["role"]}: {m["content"]}' for m in st.session_state.messages]
+                    )
+                    
+                    try:
+                        # Call the AI model
+                        ai_response = get_ai_response(
+                            f"{system_prompt}\n\n{chat_history_for_prompt}\nuser: {prompt}\nassistant:",
+                            "gemini-1.5-flash"
+                        )
+                        
+                        # Display the AI response
+                        st.markdown(ai_response)
+                        
+                        # Add AI response to session state
+                        st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                        
+                        # Save the updated conversation history
+                        if username:
+                            save_conversations(username, st.session_state.messages)
+
+                    except Exception as e:
+                        error_message = f"Sorry, an error occurred: {e}"
+                        st.error(error_message)
+                        # Add an error message to the chat for user visibility
+                        st.session_state.messages.append({"role": "assistant", "content": "I'm having trouble responding right now. Please try again."})
+
 if "palette_name" not in st.session_state:
     st.session_state.palette_name = "Light"
 if "mental_disorders" not in st.session_state:

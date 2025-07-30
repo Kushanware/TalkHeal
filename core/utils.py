@@ -1,3 +1,35 @@
+import json
+import os
+
+# Directory to store conversation files
+CONVERSATIONS_DIR = "conversations"
+if not os.path.exists(CONVERSATIONS_DIR):
+    os.makedirs(CONVERSATIONS_DIR)
+
+def save_conversations(username, messages):
+    """Saves a user's conversation history to a JSON file."""
+    if not username:
+        return
+    file_path = os.path.join(CONVERSATIONS_DIR, f"{username}_chat.json")
+    try:
+        with open(file_path, "w") as f:
+            json.dump(messages, f, indent=4)
+    except Exception as e:
+        print(f"Error saving conversation for {username}: {e}")
+
+def load_conversations(username):
+    """Loads a user's conversation history from a JSON file."""
+    if not username:
+        return []
+    file_path = os.path.join(CONVERSATIONS_DIR, f"{username}_chat.json")
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"Error loading conversation for {username}: {e}")
+            return []
+    return []
 from datetime import datetime, timedelta, timezone
 import streamlit as st
 import re
