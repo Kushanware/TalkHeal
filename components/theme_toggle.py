@@ -81,16 +81,5 @@ def render_theme_toggle():
             overflow: hidden !important;
             text-overflow: ellipsis !important;
         }
-
-        /* Custom Streamlit tooltip styling */
-        div[data-testid="stTooltip"] {
-            background: #333 !important; /* Dark background */
-            color: #fff !important; /* White text */
-            border-radius: 8px !important;
-            font-size: 0.9em !important;
-            padding: 8px 12px !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
-        }
         </style>
-        """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True) 
