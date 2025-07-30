@@ -74,6 +74,7 @@ from components.sidebar import render_sidebar
 from components.chat_interface import render_chat_interface, handle_chat_input
 from components.emergency_page import render_emergency_page
 from components.profile import apply_global_font_size
+from components.theme_toggle import render_theme_toggle
 
 
 # --- 1. INITIALIZE SESSION STATE ---
@@ -87,6 +88,13 @@ if "show_emergency_page" not in st.session_state:
     st.session_state.show_emergency_page = False
 if "sidebar_state" not in st.session_state:
     st.session_state.sidebar_state = "expanded"
+# Initialize theme state early for better performance
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+if "theme_changed" not in st.session_state:
+    st.session_state.theme_changed = False
+if "palette_name" not in st.session_state:
+    st.session_state.palette_name = "Light"
 if "mental_disorders" not in st.session_state:
     st.session_state.mental_disorders = [
         "Depression & Mood Disorders", "Anxiety & Panic Disorders", "Bipolar Disorder",
@@ -151,6 +159,7 @@ if st.session_state.get("show_emergency_page"):
 else:
     with main_area:
         render_header()
+        render_theme_toggle()
         st.markdown(f"""
 <div style="text-align: center; margin: 20px 0;">
     <h3>🗣️ Current Chatbot Tone: <strong>{st.session_state['selected_tone']}</strong></h3>
@@ -170,4 +179,4 @@ st.markdown("""
     }
     setTimeout(scrollToBottom, 100);
 </script>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)

@@ -347,16 +347,20 @@ def render_sidebar():
             </div>
             """.format(current_theme['name']), unsafe_allow_html=True)
 
-            # Theme toggle button with better styling
-            button_text = "🌙 Dark Mode" if not is_dark else "☀️ Light Mode"
-            button_color = "primary" if not is_dark else "secondary"
+            # Theme toggle button with ultra-fast performance
+            button_text = "🌙 Dark" if not is_dark else "☀️ Light"
+            
+            # Use a unique key that includes current state and version for optimal performance
+            sidebar_button_key = f"sidebar_theme_toggle_{is_dark}_{st.session_state.get('sidebar_theme_version', 0)}"
 
             if st.button(
                 button_text,
-                key="sidebar_theme_toggle",
+                key=sidebar_button_key,
                 use_container_width=True,
-                type=button_color
+                help="Toggle Light/Dark Mode"
             ):
+                # Increment version for faster re-renders
+                st.session_state.sidebar_theme_version = st.session_state.get('sidebar_theme_version', 0) + 1
                 toggle_theme()
 
         # Quizzes expander (no longer contains nested expander)

@@ -2,7 +2,7 @@ import streamlit as st
 from core.theme import toggle_theme, get_current_theme
 
 def render_theme_toggle():
-    """Render the theme toggle button in the top right corner."""
+    """Render the theme toggle button with optimized performance."""
     current_theme = get_current_theme()
     is_dark = current_theme["name"] == "Dark"
     
@@ -12,57 +12,85 @@ def render_theme_toggle():
         col1, col2, col3 = st.columns([0.7, 0.2, 0.1])
         
         with col3:
-            # Theme toggle button
-            button_text = "🌙 Dark Mode" if is_dark else "☀️ Light Mode"
-            button_color = "primary" if is_dark else "secondary"
+            # Theme toggle button with ultra-fast response
+            button_text = "🌙 Dark" if not is_dark else "☀️ Light"
             
+            # Use a unique key that includes current state to prevent conflicts
+            button_key = f"theme_toggle_{is_dark}_{st.session_state.get('theme_version', 0)}"
+            
+            # Add immediate visual feedback with custom styling
             if st.button(
                 button_text,
-                key="theme_toggle",
+                key=button_key,
                 help="Toggle Light/Dark Mode",
-                use_container_width=True,
-                type=button_color
+                use_container_width=True
             ):
+                # Increment theme version for faster key generation
+                st.session_state.theme_version = st.session_state.get('theme_version', 0) + 1
                 toggle_theme()
         
-        # Add some custom CSS to style the toggle button
+        # Ultra-optimized CSS with hardware acceleration
         st.markdown("""
         <style>
-        /* Theme toggle button styling - consistent with sidebar */
-        [data-testid="stButton"] > button[key="theme_toggle"] {
+        /* Theme toggle button styling - maximum performance */
+        [data-testid="stButton"] > button[key*="theme_toggle"] {
             background: var(--light-transparent-bg) !important;
             color: var(--text-primary) !important;
             border: 1px solid var(--light-transparent-border) !important;
             border-radius: var(--radius) !important;
-            padding: 12px 16px !important;
+            padding: 10px 14px !important;
             font-weight: 600 !important;
-            transition: all 0.2s ease !important;
+            transition: all 0.08s ease-out !important;
             font-family: 'Inter', sans-serif !important;
-            box-shadow: 0 2px 8px var(--shadow) !important;
-            backdrop-filter: blur(5px) !important;
+            box-shadow: 0 2px 6px var(--shadow) !important;
+            backdrop-filter: blur(2px) !important;
             white-space: nowrap !important;
             text-overflow: ellipsis !important;
             overflow: hidden !important;
-            min-height: 44px !important;
+            min-height: 40px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 0.9em !important;
-            line-height: 1.2 !important;
+            font-size: 0.85em !important;
+            line-height: 1.1 !important;
             word-break: keep-all !important;
+            will-change: transform, background, box-shadow !important;
+            transform: translateZ(0) !important;
+            backface-visibility: hidden !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
         }
         
-        [data-testid="stButton"] > button[key="theme_toggle"]:hover {
+        [data-testid="stButton"] > button[key*="theme_toggle"]:hover {
             background: var(--light-transparent-bg-hover) !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 12px var(--shadow-lg) !important;
+            color: var(--button-hover-text) !important;
+            border-color: var(--primary-color) !important;
+            border-width: 2px !important;
+            transform: translateY(-1px) scale(1.02) translateZ(0) !important;
+            box-shadow: 0 4px 10px var(--shadow-lg) !important;
+        }
+
+        [data-testid="stButton"] > button[key*="theme_toggle"]:active {
+            transform: translateY(0) scale(1.0) translateZ(0) !important;
+            transition: all 0.05s ease-out !important;
         }
         
         /* Ensure button text doesn't wrap */
-        [data-testid="stButton"] > button[key="theme_toggle"] span {
+        [data-testid="stButton"] > button[key*="theme_toggle"] span {
             white-space: nowrap !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
         }
+
+        /* Custom Streamlit tooltip styling */
+        div[data-testid="stTooltip"] {
+            background: #333 !important; /* Dark background */
+            color: #fff !important; /* White text */
+            border-radius: 8px !important;
+            font-size: 0.9em !important;
+            padding: 8px 12px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+        }
         </style>
-        """, unsafe_allow_html=True) 
+        """, unsafe_allow_html=True)

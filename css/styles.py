@@ -1,14 +1,36 @@
 import streamlit as st
 import base64
+import hashlib
 
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
+@st.cache_data(ttl=600, show_spinner=False)  # Cache for 10 minutes, no spinner
+def _generate_css_hash(theme_config):
+    """Generate a hash of the theme configuration for caching."""
+    # Only hash essential theme properties for better cache hits
+    essential_props = ['name', 'primary', 'background_image', 'text_primary', 'light_transparent_bg']
+    theme_subset = {k: v for k, v in theme_config.items() if k in essential_props}
+    theme_str = str(sorted(theme_subset.items()))
+    return hashlib.md5(theme_str.encode()).hexdigest()
+
 def apply_custom_css():
     from core.theme import get_current_theme
     theme_config = get_current_theme()
+    
+    # Check if CSS needs to be regenerated using faster hash comparison
+    css_hash = _generate_css_hash(theme_config)
+    last_css_hash = st.session_state.get("last_css_hash", "")
+    
+    # Skip CSS regeneration if theme hasn't meaningfully changed
+    if css_hash == last_css_hash and not st.session_state.get("theme_changed", False):
+        return
+    
+    # Update cache state
+    st.session_state.last_css_hash = css_hash
+    st.session_state.theme_changed = False
     theme_overrides = {
         'primary': '#6366f1',
         'primary_light': '#818cf8',
@@ -56,6 +78,10 @@ def apply_custom_css():
             --border-light: {theme_config['border_light']};
             --shadow: {theme_config['shadow']};
             --shadow-lg: {theme_config['shadow_lg']};
+            --light-transparent-bg: {theme_config['light_transparent_bg']};
+            --light-transparent-bg-hover: {theme_config['light_transparent_bg_hover']};
+            --light-transparent-border: {theme_config['light_transparent_border']};
+            --button-hover-text: {theme_config['primary_dark']};
             --radius: 12px;
             --radius-lg: 22px;
             --radius-xl: 36px;
@@ -378,53 +404,81 @@ def apply_custom_css():
             box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4) !important;
         }}
 
-        /* Theme toggle button styling */
-        .stApp button[key="theme_toggle"],
-        .stApp button[key="sidebar_theme_toggle"] {{
+        /* Theme toggle button styling - ultra-fast optimized */
+        .stApp button[key*="theme_toggle"] {{
             white-space: nowrap !important;
             text-overflow: ellipsis !important;
             overflow: hidden !important;
-            min-height: 44px !important;
+            min-height: 40px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 0.9em !important;
-            line-height: 1.2 !important;
+            font-size: 0.85em !important;
+            line-height: 1.1 !important;
             word-break: keep-all !important;
             background: var(--light-transparent-bg) !important;
             color: var(--text-primary) !important;
             border: 1px solid var(--light-transparent-border) !important;
             border-radius: var(--radius) !important;
-            padding: 12px 16px !important;
+            padding: 10px 14px !important;
             font-weight: 600 !important;
-            transition: all 0.2s ease !important;
+            transition: all 0.1s ease-out !important;
             font-family: 'Inter', sans-serif !important;
-            box-shadow: 0 2px 8px var(--shadow) !important;
-            backdrop-filter: blur(5px) !important;
+            box-shadow: 0 2px 6px var(--shadow) !important;
+            backdrop-filter: blur(3px) !important;
+            will-change: transform, background, box-shadow !important;
+            transform: translateZ(0) !important; /* Force hardware acceleration */
+            backface-visibility: hidden !important; /* Prevent flickering */
         }}
 
-        /* General button styling */
+        .stApp button[key*="theme_toggle"]:hover {{
+            background: var(--light-transparent-bg-hover) !important;
+            color: var(--button-hover-text) !important;
+            border-color: var(--primary-color) !important;
+            border-width: 2px !important;
+            transform: translateY(-1px) scale(1.02) translateZ(0) !important;
+            box-shadow: 0 4px 10px var(--shadow-lg) !important;
+        }}
+
+        .stApp button[key*="theme_toggle"]:active {{
+            transform: translateY(0) scale(1.0) translateZ(0) !important;
+            transition: all 0.05s ease-out !important;
+        }}
+
+        /* General button styling - ultra-fast transitions */
         button, .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {{
             background: var(--glass-effect) !important;
             background-color: var(--light-transparent-bg, rgba(255,255,255,0.13)) !important;
-            color: #000000 !important;
+            color: var(--text-primary) !important;
             border: 1px solid var(--light-transparent-border, rgba(255,255,255,0.16)) !important;
             border-radius: var(--radius) !important;
             padding: 14px 22px !important;
             font-weight: 600 !important;
             font-family: 'Poppins',sans-serif !important;
             box-shadow: 0 3px 12px rgba(0,0,0,0.08) !important;
-            transition: var(--transition,.21s cubic-bezier(.5,.08,.37,1.11)) !important;
+            transition: all 0.1s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+            will-change: transform, background, box-shadow !important;
+            transform: translateZ(0) !important; /* Force hardware acceleration */
+            backface-visibility: hidden !important; /* Prevent flickering */
         }}
         
-        /* General button hover effects */
+        /* General button hover effects - ultra-fast with proper contrast */
         button:hover, .stButton > button:hover,
         .stDownloadButton > button:hover,
         .stFormSubmitButton > button:hover {{
             border-color: var(--primary-color) !important;
             border-width: 2px !important;
-            transform: translateY(-2px) scale(1.04) !important;
-            box-shadow: 0 4px 16px rgba(99,102,241,0.2) !important;
+            color: var(--button-hover-text) !important;
+            transform: translateY(-1px) scale(1.02) translateZ(0) !important;
+            box-shadow: 0 4px 14px rgba(99,102,241,0.2) !important;
+        }}
+
+        /* Button active state for instant feedback */
+        button:active, .stButton > button:active,
+        .stDownloadButton > button:active,
+        .stFormSubmitButton > button:active {{
+            transform: translateY(0) scale(1.0) translateZ(0) !important;
+            transition: all 0.05s ease-out !important;
         }}
         
         /* Primary buttons */

@@ -237,13 +237,41 @@ def get_current_theme() -> Dict[str, Any]:
         return palette
 
 def set_palette(palette_name: str):
+    # Add light throttling to prevent rapid successive calls
+    import time
+    current_time = time.time()
+    last_palette_time = st.session_state.get("last_palette_change", 0)
+    
+    # Only allow palette change every 50ms to prevent spam (reduced from 200ms)
+    if current_time - last_palette_time < 0.05:
+        return
+    
+    if st.session_state.get("palette_name") == palette_name:
+        return  # No change needed
+    
+    st.session_state.last_palette_change = current_time
     st.session_state.palette_name = palette_name
     st.session_state.theme_changed = True
+    
+    # Force immediate rerun for faster response
     st.rerun()
 
 def toggle_theme():
-    """Toggle between light and dark themes."""
+    """Toggle between light and dark themes with optimized performance."""
     initialize_theme_state()
+    
+    # Add light throttling to prevent rapid successive calls
+    import time
+    current_time = time.time()
+    last_toggle_time = st.session_state.get("last_theme_toggle", 0)
+    
+    # Only allow theme toggle every 50ms to prevent spam (reduced from 200ms)
+    if current_time - last_toggle_time < 0.05:
+        return
+    
+    st.session_state.last_theme_toggle = current_time
     st.session_state.dark_mode = not st.session_state.dark_mode
     st.session_state.theme_changed = True
+    
+    # Force immediate rerun for faster response
     st.rerun() 
