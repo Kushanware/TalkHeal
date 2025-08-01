@@ -257,21 +257,33 @@ def set_palette(palette_name: str):
     st.rerun()
 
 def toggle_theme():
-    """Toggle between light and dark themes with optimized performance."""
+    """Toggle between light and dark themes with maximum performance optimization."""
     initialize_theme_state()
     
-    # Add light throttling to prevent rapid successive calls
+    # Optimized throttling - reduced to 20ms for faster response while preventing spam
     import time
     current_time = time.time()
     last_toggle_time = st.session_state.get("last_theme_toggle", 0)
     
-    # Only allow theme toggle every 50ms to prevent spam (reduced from 200ms)
-    if current_time - last_toggle_time < 0.05:
+    # Minimal throttling to prevent accidental double-clicks only
+    if current_time - last_toggle_time < 0.02:
         return
     
     st.session_state.last_theme_toggle = current_time
-    st.session_state.dark_mode = not st.session_state.dark_mode
-    st.session_state.theme_changed = True
     
-    # Force immediate rerun for faster response
-    st.rerun() 
+    # Direct state change without extra flags
+    st.session_state.dark_mode = not st.session_state.dark_mode
+    
+    # Mark that CSS needs to be reloaded
+    st.session_state.force_css_reload = True
+    
+    # Optimized rerun - use fastest available method
+    try:
+        # Try the newer, faster rerun method first
+        import streamlit.runtime.scriptrunner.script_runner as sr
+        sr.get_script_run_ctx().request_rerun()
+    except (AttributeError, ImportError):
+        try:
+            st.experimental_rerun()
+        except AttributeError:
+            st.rerun() 

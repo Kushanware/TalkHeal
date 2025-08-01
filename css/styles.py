@@ -7,30 +7,31 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-@st.cache_data(ttl=600, show_spinner=False)  # Cache for 10 minutes, no spinner
+@st.cache_data(ttl=300, show_spinner=False)  # Cache for 5 minutes, faster invalidation
 def _generate_css_hash(theme_config):
     """Generate a hash of the theme configuration for caching."""
     # Only hash essential theme properties for better cache hits
-    essential_props = ['name', 'primary', 'background_image', 'text_primary', 'light_transparent_bg']
+    essential_props = ['name', 'primary', 'background_image', 'text_primary']
     theme_subset = {k: v for k, v in theme_config.items() if k in essential_props}
     theme_str = str(sorted(theme_subset.items()))
     return hashlib.md5(theme_str.encode()).hexdigest()
 
 def apply_custom_css():
+    """Apply CSS with performance optimizations to reduce theme toggle delays."""
     from core.theme import get_current_theme
     theme_config = get_current_theme()
     
-    # Check if CSS needs to be regenerated using faster hash comparison
+    # Ultra-fast CSS change detection
     css_hash = _generate_css_hash(theme_config)
     last_css_hash = st.session_state.get("last_css_hash", "")
     
-    # Skip CSS regeneration if theme hasn't meaningfully changed
-    if css_hash == last_css_hash and not st.session_state.get("theme_changed", False):
+    # Skip CSS regeneration if theme hasn't changed (major performance boost)
+    if css_hash == last_css_hash and not st.session_state.get("force_css_reload", False):
         return
     
-    # Update cache state
+    # Update cache state with minimal overhead
     st.session_state.last_css_hash = css_hash
-    st.session_state.theme_changed = False
+    st.session_state.force_css_reload = False
     theme_overrides = {
         'primary': '#6366f1',
         'primary_light': '#818cf8',
@@ -86,7 +87,7 @@ def apply_custom_css():
             --radius-lg: 22px;
             --radius-xl: 36px;
             --glass-effect: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
-            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.1s ease-out;
         }}
 
         .stApp > header {{
@@ -152,10 +153,9 @@ def apply_custom_css():
             font-weight: 470;
             line-height: 1.5;
             position: relative;
-            backdrop-filter: blur(11px);
             display: block;
-            opacity: 0;
-            animation: floatUp 0.5s cubic-bezier(0.25,0.8,0.25,1) forwards;
+            opacity: 1;
+            transform: none;
         }}
         
         /* User message styling */
@@ -177,10 +177,10 @@ def apply_custom_css():
             margin-right: auto;
         }}
         
-        /* Message animation */
+        /* Simplified message animation for better performance */
         @keyframes floatUp {{
-            from {{ transform: translateY(20px); opacity: 0; }}
-            to   {{ transform: none; opacity: 1; }}
+            from {{ opacity: 0.7; }}
+            to   {{ opacity: 1; }}
         }}
 
         /* Message timestamp styling */
@@ -195,7 +195,7 @@ def apply_custom_css():
             color: #c4d0e0;
         }}
 
-        /* Welcome message styling */
+        /* Welcome message styling - performance optimized */
         .welcome-message {{
             background: linear-gradient(120deg, rgba(99,102,241,0.75) 0%, rgba(236,72,153,0.75) 100%);
             color: #f7fafb;
@@ -203,24 +203,22 @@ def apply_custom_css():
             margin: 38px auto 32px auto;
             border-radius: var(--radius-xl);
             max-width: 680px;
-            box-shadow: 0 6px 38px 0 rgba(96,100,255,0.11);
+            box-shadow: 0 4px 24px 0 rgba(96,100,255,0.08);
             font-size: 1.14em;
             text-align: center;
-            backdrop-filter: blur(12px);
             position: relative;
             overflow: hidden;
-            transform: scale(0.97);
-            opacity: 0;
-            animation: scaleIn 0.7s cubic-bezier(0.22,0.68,0.32,1.18) .1s forwards;
+            opacity: 1;
+            transform: scale(1);
         }}
         
-        /* Welcome message animation */
+        /* Simplified animation for better performance */
         @keyframes scaleIn {{
-            from {{ transform: scale(0.97); opacity: 0;  }}
-            to   {{ transform: scale(1); opacity: 1; }}
+            from {{ opacity: 0.8; }}
+            to   {{ opacity: 1; }}
         }}
 
-        /* Main header styling */
+        /* Header styling - performance optimized */
         .main-header {{
             --gradient: linear-gradient(100deg, var(--primary-color), var(--secondary-color));
             text-align: center;
@@ -233,21 +231,13 @@ def apply_custom_css():
             border: 1px solid var(--border-light);
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(10px);
         }}
         
-        /* Header gradient animation */
+        /* Simplified header accent - no animation for better performance */
         .main-header::before {{
             content: '';
             position: absolute; top: 0; left: 0; right: 0; height: 3px;
             background: var(--gradient);
-            animation: gradientFlow 7s linear infinite;
-            background-size: 200% 200%;
-        }}
-        @keyframes gradientFlow {{
-          0% {{ background-position: 0% 50%; }}
-          50% {{ background-position: 100% 50%;}}
-          100% {{ background-position: 0% 50%;}}
         }}
         
         /* Header title styling */
@@ -287,7 +277,6 @@ def apply_custom_css():
             font-weight: 600;
             font-size: 1.1em;
             border: 1px solid rgba(239, 68, 68, 0.8) !important;
-            backdrop-filter: blur(5px);
             text-decoration: none !important;
             position: relative;
             overflow: hidden;
@@ -328,11 +317,10 @@ def apply_custom_css():
         /* Sidebar styling */
         [data-testid="stSidebar"] {{
             background: linear-gradient(120deg, rgba(236,72,153,0.45), rgba(219,39,119,0.25), rgba(236,72,153,0.15)) !important;
-            backdrop-filter: blur(15px) !important;
             border-right: 2px solid rgba(236,72,153,0.35) !important;
-            box-shadow: 8px 0 48px rgba(236,72,153,0.25) !important;
+            box-shadow: 4px 0 24px rgba(236,72,153,0.15) !important;
             color: #e2e8f0 !important;
-            transition: background .32s cubic-bezier(.5,.13,.36,1.19);
+            transition: background .2s ease-out;
         }}
         [data-testid="stSidebar"] * {{
             color: #f5f7fb !important;
@@ -353,8 +341,7 @@ def apply_custom_css():
             height: 40px !important;
             font-size: 20px !important;
             font-weight: 900 !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
-            backdrop-filter: blur(10px) !important;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2) !important;
         }}
         
         /* Sidebar toggle button hover effects */
@@ -445,7 +432,7 @@ def apply_custom_css():
             transition: all 0.05s ease-out !important;
         }}
 
-        /* General button styling - ultra-fast transitions */
+        /* General button styling - optimized for speed */
         button, .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {{
             background: var(--glass-effect) !important;
             background-color: var(--light-transparent-bg, rgba(255,255,255,0.13)) !important;
@@ -455,30 +442,28 @@ def apply_custom_css():
             padding: 14px 22px !important;
             font-weight: 600 !important;
             font-family: 'Poppins',sans-serif !important;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.08) !important;
-            transition: all 0.1s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
-            will-change: transform, background, box-shadow !important;
-            transform: translateZ(0) !important; /* Force hardware acceleration */
-            backface-visibility: hidden !important; /* Prevent flickering */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+            transition: all 0.05s ease-out !important;
+            transform: translateZ(0) !important;
         }}
         
-        /* General button hover effects - ultra-fast with proper contrast */
+        /* General button hover effects - instant feedback */
         button:hover, .stButton > button:hover,
         .stDownloadButton > button:hover,
         .stFormSubmitButton > button:hover {{
             border-color: var(--primary-color) !important;
             border-width: 2px !important;
             color: var(--button-hover-text) !important;
-            transform: translateY(-1px) scale(1.02) translateZ(0) !important;
-            box-shadow: 0 4px 14px rgba(99,102,241,0.2) !important;
+            transform: translateZ(0) !important;
+            box-shadow: 0 3px 10px rgba(99,102,241,0.15) !important;
         }}
 
         /* Button active state for instant feedback */
         button:active, .stButton > button:active,
         .stDownloadButton > button:active,
         .stFormSubmitButton > button:active {{
-            transform: translateY(0) scale(1.0) translateZ(0) !important;
-            transition: all 0.05s ease-out !important;
+            transform: translateZ(0) !important;
+            transition: all 0.02s ease-out !important;
         }}
         
         /* Primary buttons */
@@ -562,7 +547,7 @@ def apply_custom_css():
             opacity: .77 !important;
         }}
 
-        /* Floating action button styling */
+        /* Floating action button styling - optimized */
         .floating-action-button {{
             position: fixed;
             bottom: 28px; right: 28px;
@@ -572,16 +557,16 @@ def apply_custom_css():
             color: #fff;
             display: flex; align-items: center; justify-content: center;
             font-size: 23px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.14);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
             cursor: pointer; z-index: 120;
             border: none;
-            transition: .16s cubic-bezier(.47,.43,.41,1.35);
+            transition: transform 0.1s ease-out;
         }}
         
-        /* Floating action button hover effects */
+        /* Floating action button hover effects - reduced animation */
         .floating-action-button:hover {{
-            transform: translateY(-4px) scale(1.10);
-            box-shadow: 0 10px 32px rgba(0,0,0,0.27);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         }}
 
         /* Expander styling */
