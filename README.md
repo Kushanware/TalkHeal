@@ -4,7 +4,7 @@
 
 ## 🧠 Your AI-Powered Mental Health Companion
 
-**TalkHeal** is an empathetic, intelligent, and interactive mental health support assistant built using **Python** and **Streamlit**. Designed with compassion and care at its core, it offers 24/7 support, emotional journaling, resource guidance, and AI-powered conversations powered by Google’s Gemini Pro.
+**TalkHeal** is an empathetic, intelligent, and interactive mental health support assistant built using **Python** and **Streamlit**. Designed with compassion and care at its core, it offers 24/7 support, emotional journaling, resource guidance, and AI-powered conversations powered by Google’s Gemini.
 
 ---
 

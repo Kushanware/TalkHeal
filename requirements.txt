@@ -6,3 +6,4 @@ requests
 Pillow
 streamlit-lottie
 bcrypt
+streamlit_js_eval
